@@ -1,73 +1,51 @@
-:root {
-    --bg: #000;
-    --bg-alt: #0b0b0b;
-    --text: #fff;
-    --text-muted: #666;
-    --accent: #00f0ff;
-    --border-sharp: #2a2a2a;
-    --font-mono: monospace;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
 body {
+    margin: 0;
+    font-family: monospace;
+    background: #000;
+    color: #fff;
+}
+
+.app {
+    display: flex;
     height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 180px;
+    background: #050505;
+    border-right: 1px solid #222;
+    padding: 10px;
+}
+
+.logo span {
+    color: cyan;
+}
+
+#roomList div {
+    padding: 4px;
+    cursor: pointer;
+    color: #888;
+}
+
+#roomList div:hover {
+    color: cyan;
+}
+
+/* MAIN */
+.main {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-mono);
 }
 
-/* Header */
 .header {
+    padding: 5px;
+    border-bottom: 1px solid #222;
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 10px;
-    border-bottom: 1px solid var(--border-sharp);
+    justify-content: space-between;
 }
 
-.logo .accent {
-    color: var(--accent);
-}
-
-#roomLabel {
-    color: var(--text-muted);
-    font-size: 12px;
-}
-
-/* Nick */
-.nick-box {
-    margin-left: auto;
-    display: flex;
-    gap: 5px;
-}
-
-.nick-box input {
-    background: #111;
-    border: 1px solid var(--border-sharp);
-    color: white;
-    padding: 2px 6px;
-}
-
-.nick-box button {
-    border: 1px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    cursor: pointer;
-}
-
-.nick-box button:hover {
-    background: var(--accent);
-    color: black;
-}
-
-/* Chat */
 .chat-log {
     flex: 1;
     overflow-y: auto;
@@ -76,45 +54,32 @@ body {
 
 .msg {
     font-size: 12px;
-    margin-bottom: 2px;
-}
-
-.time {
-    color: var(--text-muted);
-    margin-right: 5px;
 }
 
 .handle {
     font-weight: bold;
 }
 
-.msg.system {
-    color: #777;
+.time {
+    color: #666;
 }
 
-/* Input */
+/* INPUT */
 .input-area {
     display: flex;
-    padding: 5px;
-    border-top: 1px solid var(--border-sharp);
+    border-top: 1px solid #222;
 }
 
 .input-area input {
     flex: 1;
     background: #111;
-    border: 1px solid var(--border-sharp);
+    border: none;
     color: white;
     padding: 5px;
 }
 
-.input-area button {
-    border: 1px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    padding: 5px 10px;
-}
-
-.input-area button:hover {
-    background: var(--accent);
-    color: black;
+button {
+    background: black;
+    border: 1px solid cyan;
+    color: cyan;
 }

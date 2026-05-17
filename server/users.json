@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "id": "1779057644481",
+      "username": "IamTheBOSS",
+      "password": "$2b$10$Wk9B1REG3v3k9wcEYMgUyupCJhme3z528CL8oowps6e2lrZv1u0Uq",
+      "createdAt": "2026-05-17T22:40:44.481Z",
+      "isAdmin": false
+    },
+    {
+      "id": "1779059969496",
+      "username": "TestUser701684446",
+      "password": "$2b$10$hdgy3f7Wj9.vf.0u/6Xtp.9sonB4QHLGkvxgvRWRUggt5a1COaDzi",
+      "createdAt": "2026-05-17T23:19:29.516Z",
+      "isAdmin": false
+    },
+    {
+      "id": "1779060473524",
+      "username": "test",
+      "password": "$2b$10$w5G2WPWIgDkJ996KGO/iBeQNXBJFbW009x982fBOG5kAlW72g5jSK",
+      "createdAt": "2026-05-17T23:27:53.524Z",
+      "isAdmin": false
+    },
+    {
+      "id": "1779060933694",
+      "username": "uehiwidewh",
+      "password": "$2b$10$5bDLI2Cibh1Ql0bsw.XPV.YqwNLJLPEkDKcM1qjNbEdyR6Jj9sYAK",
+      "createdAt": "2026-05-17T23:35:33.694Z",
+      "isAdmin": false
+    }
+  ]
+}

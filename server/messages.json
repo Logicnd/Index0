@@ -1,0 +1,341 @@
+{
+  "channel:general": [
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060007278
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060410997
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060411995
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060419783
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060420079
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060425263
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060429327
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060431672
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060439763
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060463565
+    },
+    {
+      "type": "system",
+      "text": "test joined the server",
+      "timestamp": 1779060473566
+    },
+    {
+      "type": "system",
+      "text": "test left the server",
+      "timestamp": 1779060486158
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060501477
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060623454
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060623670
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060635422
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060635565
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060880880
+    },
+    {
+      "type": "system",
+      "text": "uehiwidewh joined the server",
+      "timestamp": 1779060933752
+    },
+    {
+      "type": "system",
+      "text": "uehiwidewh joined the server",
+      "timestamp": 1779060989864
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060990017
+    }
+  ],
+  "channel:random": [
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060007280
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060410999
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060411996
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060419783
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060420080
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060425263
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060429328
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060431672
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060439763
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060463565
+    },
+    {
+      "type": "system",
+      "text": "test joined the server",
+      "timestamp": 1779060473566
+    },
+    {
+      "type": "system",
+      "text": "test left the server",
+      "timestamp": 1779060486158
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060501477
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060623454
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060623670
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060635422
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060635565
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060880881
+    },
+    {
+      "type": "system",
+      "text": "uehiwidewh joined the server",
+      "timestamp": 1779060933752
+    },
+    {
+      "type": "system",
+      "text": "uehiwidewh joined the server",
+      "timestamp": 1779060989865
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060990017
+    }
+  ],
+  "channel:tech": [
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060007280
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060411000
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060411996
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060419783
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060420080
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060425264
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060429328
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060431672
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060439763
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060463565
+    },
+    {
+      "type": "system",
+      "text": "test joined the server",
+      "timestamp": 1779060473566
+    },
+    {
+      "type": "system",
+      "text": "test left the server",
+      "timestamp": 1779060486158
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060501477
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060623454
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060623670
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS left the server",
+      "timestamp": 1779060635422
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060635565
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060880881
+    },
+    {
+      "type": "system",
+      "text": "uehiwidewh joined the server",
+      "timestamp": 1779060933752
+    },
+    {
+      "type": "system",
+      "text": "uehiwidewh joined the server",
+      "timestamp": 1779060989865
+    },
+    {
+      "type": "system",
+      "text": "IamTheBOSS joined the server",
+      "timestamp": 1779060990017
+    }
+  ],
+  "dm:1779057644481:1779060933694": [
+    {
+      "type": "user",
+      "handle": "uehiwidewh",
+      "text": "sup",
+      "timestamp": 1779060999631,
+      "userId": "1779060933694",
+      "roomKey": "dm:1779057644481:1779060933694"
+    },
+    {
+      "type": "user",
+      "handle": "uehiwidewh",
+      "text": "e",
+      "timestamp": 1779061002421,
+      "userId": "1779060933694",
+      "roomKey": "dm:1779057644481:1779060933694"
+    }
+  ]
+}

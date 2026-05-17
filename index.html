@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index0 — Chatroom</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="header">
+    <span class="logo">Index<span class="accent">0</span></span>
+    <span id="roomLabel">#main</span>
+
+    <div class="nick-box">
+        <input type="text" id="nickInput" placeholder="Your handle..." maxlength="20">
+        <button id="setNickBtn">Set Nick</button>
+    </div>
+</header>
+
+<div class="chat-log" id="chatLog"></div>
+
+<div class="input-area">
+    <input type="text" id="messageInput" placeholder="Type a message..." maxlength="500">
+    <button id="sendBtn">Send</button>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

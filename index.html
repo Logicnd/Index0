@@ -1,45 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index0</title>
-<link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index0</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
 
 <div class="app">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <div class="logo">Index<span>0</span></div>
-        <div id="roomList"></div>
-    </div>
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            Index<span>0</span>
+        </div>
 
-    <!-- MAIN -->
-    <div class="main">
-        <div class="header">
-            <span id="roomLabel">#main</span>
+        <div class="sidebar-section">
+            <div class="section-title">CHANNELS</div>
+            <div id="channelList"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="section-title">DIRECT</div>
+            <div id="dmList"></div>
+        </div>
+    </aside>
+
+    <!-- MAIN CHAT -->
+    <main class="main">
+
+        <header class="topbar">
+            <div>
+                <span id="roomLabel">#main</span>
+                <span id="roomTypeLabel">channel</span>
+            </div>
 
             <div class="nick-box">
-                <input id="nickInput" placeholder="nick...">
-                <button id="setNickBtn">set</button>
+                <input type="text" id="nickInput" placeholder="handle..." maxlength="20">
+                <button id="setNickBtn">Set</button>
             </div>
-        </div>
+        </header>
 
-        <div class="chat-log" id="chatLog"></div>
+        <section class="chat-log" id="chatLog"></section>
 
-        <div class="input-area">
-            <input id="messageInput" placeholder="message...">
+        <footer class="input-area">
+            <input type="text" id="messageInput" placeholder="Type a message..." maxlength="500">
             <button id="sendBtn">Send</button>
-        </div>
-    </div>
+        </footer>
+
+    </main>
+
+    <!-- RIGHT USER LIST -->
+    <aside class="userbar">
+        <div class="section-title">USERS</div>
+        <div id="userList"></div>
+    </aside>
 
 </div>
 
 <script src="js/state.js"></script>
-<script src="js/chat.js"></script>
+<script src="js/storage.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/commands.js"></script>
 <script src="js/app.js"></script>

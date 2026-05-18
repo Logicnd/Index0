@@ -45,13 +45,21 @@ let messageBuckets = new Map();
 let messageSaveTimer = null;
 
 app.use(cors({
-  origin: (origin, callback) => callback(null, true), // Allow all origins for Vercel
-  methods: ['GET', 'POST'],
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
   credentials: true
 }));
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.static(path.join(__dirname, '..')));
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'index0-backend',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // New endpoint to capture client-side logs
 app.post('/api/log', (req, res) => {

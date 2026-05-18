@@ -1,4 +1,9 @@
-const API_BASE = window.INDEX0_API_BASE;
+const API_BASE =
+  (typeof window.INDEX0_API_BASE === 'string' && window.INDEX0_API_BASE) ||
+  (typeof window.INDEX0_CONFIG?.backendUrl === 'string' && window.INDEX0_CONFIG.backendUrl.replace(/\/$/, '')) ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
+    : 'https://index0-backend.onrender.com');
 
 // =============================================
 //          REMOTE LOGGING SETUP
@@ -199,7 +204,9 @@ function escapeText(value) {
 }
 
 function setConnectionStatus(text) {
-  connectionStatus.textContent = text;
+  if (connectionStatus) {
+    connectionStatus.textContent = text;
+  }
 }
 
 function showAuthModal() {
@@ -921,10 +928,12 @@ function connectSocket(token) {
 
   state.socket = io(API_BASE, {
     auth: { token },
-    transports: ['websocket', 'polling'],
+    transports: ['polling', 'websocket'],
     reconnection: true,
     reconnectionAttempts: Infinity,
-    timeout: 5000
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000
   });
 
   state.socket.on('connect', () => {
@@ -954,7 +963,8 @@ function connectSocket(token) {
       return;
     }
 
-    setConnectionStatus('Connecting...');
+    setConnectionStatus(`Offline — ${message}`);
+    setAppConnected(false);
   });
 
   state.socket.on('new_message', handleSocketMessage);
@@ -1303,6 +1313,7 @@ async function bootstrap() {
   setupEventListeners();
   setAuthMode('login');
   updateRoomHeader();
+  renderSidebar();
   setAppConnected(false);
   if (dom.logoutBtn) {
     dom.logoutBtn.hidden = true;

@@ -80,6 +80,8 @@ Copy `.env.example` to `.env` at the repo root (already gitignored):
 
 **Important:** `JWT_SECRET` and `ADMIN_JWT_SECRET` must match on every backend deployment. If Render uses different secrets than when users signed up, existing logins break — set the same values in the Render dashboard as in `.env`.
 
+For the full production checklist (Render + Vercel + local), read **[DEPLOY.md](./DEPLOY.md)**.
+
 ## Deploy frontend on Vercel
 
 1. Connect the repo to Vercel (root directory, no framework).

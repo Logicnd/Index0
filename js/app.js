@@ -66,12 +66,11 @@ const API_BASE = window.INDEX0_API_BASE;
 })();
 
 
+const JOIN_LEAVE_CHANNEL_ID = 'join-leave';
+
 const CHANNELS = [
   { id: 'general', name: '#general' },
-  { id: 'rules', name: '#rules', isReadOnly: true },
-  { id: 'random', name: '#random' },
-  { id: 'tech', name: '#tech' },
-  { id: 'member-activity', name: '#member-activity', isHidden: true }
+  { id: JOIN_LEAVE_CHANNEL_ID, name: '#Join-Leave', isReadOnly: true }
 ];
 
 const ADMIN_USERNAMES = ['kiri']; // Case-insensitive check will be used
@@ -373,25 +372,17 @@ function renderMessages() {
 
   const roomKey = getRoomKey(state.currentRoom.type, state.currentRoom.id);
   const roomMessages = state.messages.get(roomKey) || [];
+  let displayMessages = roomMessages;
 
-  dom.chatLog.innerHTML = '';
-  
-  const channel = CHANNELS.find(c => c.id === state.currentRoom.id);
-  if (channel && channel.id === 'rules' && !roomMessages.length) {
-      const rules = [
-          "Be respectful to all members.",
-          "No spamming or self-promotion.",
-          "No NSFW content.",
-          "Do not share personal information.",
-          "Follow the Discord Terms of Service."
-      ];
-      rules.forEach(rule => {
-          addMessage(roomKey, { type: 'system', text: rule, timestamp: Date.now() });
-      });
+  if (state.currentRoom.type === 'channel' && state.currentRoom.id === 'general') {
+    displayMessages = roomMessages.filter((message) => message.type !== 'system');
+  } else if (state.currentRoom.type === 'channel' && state.currentRoom.id === JOIN_LEAVE_CHANNEL_ID) {
+    displayMessages = roomMessages.filter((message) => message.type === 'system');
   }
 
+  dom.chatLog.innerHTML = '';
 
-  if (!roomMessages.length) {
+  if (!displayMessages.length) {
     const emptyState = document.createElement('div');
     emptyState.className = 'msg system';
     const timeNode = document.createElement('span');
@@ -406,7 +397,7 @@ function renderMessages() {
     return;
   }
 
-  roomMessages.forEach((message) => {
+  displayMessages.forEach((message) => {
     const row = document.createElement('div');
     const isCurrentUserMsg = message.userId === state.currentUser.id;
     row.className = message.type === 'system' ? 'msg system' : 'msg';
@@ -489,7 +480,7 @@ function renderSidebar() {
   }
 
   dom.channelList.innerHTML = '';
-  CHANNELS.filter(c => !c.isHidden).forEach((channel) => {
+  CHANNELS.forEach((channel) => {
     const roomKey = `channel:${channel.id}`;
     const item = document.createElement('div');
     item.className = 'sidebar-item';
@@ -782,6 +773,35 @@ function handleInputTyping() {
   }, 3000);
 }
 
+function upsertRoomMessage(roomKey, message) {
+  const list = [...(state.messages.get(roomKey) || [])];
+
+  if (message.clientId) {
+    const pendingIndex = list.findIndex((entry) => entry.clientId === message.clientId);
+    if (pendingIndex >= 0) {
+      list[pendingIndex] = { ...list[pendingIndex], ...message, pending: false };
+      state.messages.set(roomKey, list);
+      return true;
+    }
+  }
+
+  const isDuplicate = list.some((entry) =>
+    entry.type === 'user' &&
+    message.type === 'user' &&
+    entry.userId === message.userId &&
+    entry.text === message.text &&
+    Math.abs(entry.timestamp - message.timestamp) < 3000
+  );
+
+  if (isDuplicate) {
+    return false;
+  }
+
+  list.push(message);
+  state.messages.set(roomKey, list);
+  return true;
+}
+
 function handleSocketMessage(message) {
   const roomKey = message.roomKey || getRoomKey(state.currentRoom.type, state.currentRoom.id);
   if (!roomKey) {
@@ -793,16 +813,36 @@ function handleSocketMessage(message) {
     pending: false
   };
 
-  appendMessage(roomKey, payload, { render: true });
+  if (!upsertRoomMessage(roomKey, payload)) {
+    return;
+  }
+
+  if (isCurrentRoomFromKey(roomKey)) {
+    renderMessages();
+  } else {
+    incrementUnread(roomKey);
+    renderSidebar();
+  }
 }
 
 function handleSocketSystemMessage(message) {
-    const activityChannelKey = 'channel:member-activity';
-    appendMessage(activityChannelKey, {
-        type: 'system',
-        text: message.text,
-        timestamp: message.timestamp,
-    });
+  const roomKey = message.roomKey || getRoomKey('channel', JOIN_LEAVE_CHANNEL_ID);
+  if (!roomKey) {
+    return;
+  }
+
+  upsertRoomMessage(roomKey, {
+    type: 'system',
+    text: message.text,
+    timestamp: message.timestamp
+  });
+
+  if (isCurrentRoomFromKey(roomKey)) {
+    renderMessages();
+  } else {
+    incrementUnread(roomKey);
+    renderSidebar();
+  }
 }
 
 function handleSocketTyping(payload) {
@@ -951,6 +991,242 @@ function openSettingsModal() {
 
 function closeSettingsModal() {
     dom.settingsModal.style.display = 'none';
+}
+
+function ensureCurrentRoomSubscription() {
+  if (!state.currentUser) {
+    return;
+  }
+
+  if (state.currentRoom.type === 'channel') {
+    joinRoom('channel', state.currentRoom.id);
+    return;
+  }
+
+  joinRoom('dm', state.currentRoom.id);
+}
+
+async function switchRoom(type, id) {
+  if (state.currentRoom.type === type && String(state.currentRoom.id) === String(id)) {
+    return;
+  }
+
+  state.currentRoom = { type, id: String(id) };
+  updateRoomHeader();
+  ensureCurrentRoomSubscription();
+  renderSidebar();
+  renderTypingIndicator();
+  renderMessages();
+  await loadRoomHistory(type, id);
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  clearAuthError();
+
+  const username = dom.usernameInput ? dom.usernameInput.value.trim() : '';
+  const password = dom.passwordInput ? dom.passwordInput.value : '';
+
+  if (!username || !password) {
+    showAuthError('Please enter a username and password.');
+    return;
+  }
+
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+    showAuthError('Username must be 3-20 characters and use letters, numbers, or underscores.');
+    return;
+  }
+
+  if (password.length < 4) {
+    showAuthError('Password must be at least 4 characters.');
+    return;
+  }
+
+  const endpoint = state.authMode === 'signup' ? '/api/signup' : '/api/login';
+  dom.authSubmitBtn.disabled = true;
+  dom.authSubmitBtn.textContent = 'Working...';
+
+  try {
+    const data = await apiRequest(endpoint, {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
+
+    setSession(data.token, data.user);
+    await startChat(data.user, data.token);
+  } catch (error) {
+    showAuthError(error.message || 'Authentication failed.');
+  } finally {
+    dom.authSubmitBtn.disabled = false;
+    dom.authSubmitBtn.textContent = state.authMode === 'signup' ? 'Create Account' : 'Login';
+  }
+}
+
+async function validateStoredSession() {
+  const token = getStoredToken();
+  const user = getStoredUser();
+
+  if (!token || !user) {
+    return null;
+  }
+
+  try {
+    const data = await apiRequest('/api/validate', { method: 'POST' });
+    return { token, user: data.user || user };
+  } catch {
+    clearSession();
+    return null;
+  }
+}
+
+async function startChat(user, token) {
+  state.currentUser = user;
+  clearAuthError();
+  hideAuthModal();
+  updateProfileUI();
+  updateRoomHeader();
+
+  if (dom.logoutBtn) {
+    dom.logoutBtn.hidden = false;
+  }
+
+  state.messages = new Map();
+  state.unreadCounts = new Map();
+  state.typingUsers = new Map();
+  state.pendingRoomLoads = new Set();
+  state.subscriptions = new Set();
+  state.onlineUsers = [];
+
+  renderSidebar();
+  renderUsers();
+  renderTypingIndicator();
+
+  connectSocket(token);
+  syncSubscriptions();
+
+  await loadRoomHistory(state.currentRoom.type, state.currentRoom.id, true);
+}
+
+function disconnectSocket() {
+  if (!state.socket) {
+    return;
+  }
+
+  state.socket.removeAllListeners();
+  state.socket.disconnect();
+  state.socket = null;
+}
+
+function logout() {
+  if (state.typingTimeout) {
+    window.clearTimeout(state.typingTimeout);
+    state.typingTimeout = null;
+  }
+
+  disconnectSocket();
+  state.currentUser = null;
+  state.messages.clear();
+  state.unreadCounts.clear();
+  state.subscriptions.clear();
+  state.onlineUsers = [];
+  state.typingUsers.clear();
+  state.pendingRoomLoads.clear();
+  state.isTyping = false;
+  state.lastSendAt = 0;
+  clearSession();
+
+  resetProfileUI();
+  updateRoomHeader();
+  renderMessages();
+  renderUsers();
+  renderSidebar();
+  renderTypingIndicator();
+  setAppConnected(false);
+
+  if (dom.logoutBtn) {
+    dom.logoutBtn.hidden = true;
+  }
+
+  showAuthModal();
+}
+
+function sendMessage() {
+  if (!state.currentUser || !state.socket || !state.socket.connected) {
+    setConnectionStatus('Offline');
+    return;
+  }
+
+  const channel = CHANNELS.find((entry) => entry.id === state.currentRoom.id);
+  if (state.currentRoom.type === 'channel' && channel && channel.isReadOnly) {
+    showAuthError('This channel is read-only.');
+    return;
+  }
+
+  const text = dom.messageInput ? dom.messageInput.value.trim() : '';
+  if (!text) {
+    return;
+  }
+
+  if (text.length > 500) {
+    showAuthError('Messages cannot exceed 500 characters.');
+    return;
+  }
+
+  const now = Date.now();
+  if (now - state.lastSendAt < 200) {
+    return;
+  }
+
+  state.lastSendAt = now;
+  clearAuthError();
+
+  const roomKey = getRoomKey(state.currentRoom.type, state.currentRoom.id);
+  if (!roomKey) {
+    return;
+  }
+
+  const localMessage = createLocalMessage(text);
+  appendMessage(roomKey, localMessage, { render: true });
+
+  dom.messageInput.value = '';
+  dom.messageInput.focus();
+
+  state.socket.emit('send_message', {
+    type: state.currentRoom.type,
+    id: state.currentRoom.id,
+    text,
+    clientId: localMessage.clientId
+  }, (response) => {
+    if (!response || !response.success) {
+      removePendingMessage(roomKey, localMessage.clientId);
+      showAuthError(response && response.error ? response.error : 'Message failed to send.');
+      return;
+    }
+
+    markPendingDelivered(roomKey, localMessage.clientId);
+  });
+}
+
+async function handleProfileUpdate(event) {
+  event.preventDefault();
+
+  const nickname = dom.displayNameInput ? dom.displayNameInput.value.trim() : '';
+
+  try {
+    const data = await apiRequest('/api/user/nickname', {
+      method: 'PUT',
+      body: JSON.stringify({ nickname })
+    });
+
+    state.currentUser = { ...state.currentUser, ...(data.user || {}) };
+    setSession(getStoredToken(), state.currentUser);
+    updateProfileUI();
+    renderUsers();
+    renderSidebar();
+    closeSettingsModal();
+  } catch (error) {
+    showAuthError(error.message || 'Unable to update profile.');
+  }
 }
 
 function setupEventListeners() {

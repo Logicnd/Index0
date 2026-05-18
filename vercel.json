@@ -11,6 +11,10 @@
     {
       "source": "/socket.io/:path*",
       "destination": "https://index0-backend.onrender.com/socket.io/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
     }
   ]
 }

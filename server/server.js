@@ -30,7 +30,9 @@ const MESSAGE_RATE_LIMIT = 5;
 const MESSAGE_RATE_WINDOW_MS = 2000;
 const AUTH_RATE_LIMIT = 8;
 const AUTH_RATE_WINDOW_MS = 60 * 1000;
-const CHANNELS = ['general', 'rules', 'random', 'tech', 'member-activity'];
+const CHANNEL_IDS = ['general', 'join-leave'];
+const READ_ONLY_CHANNEL_IDS = new Set(['join-leave']);
+const JOIN_LEAVE_ROOM_KEY = 'channel:join-leave';
 
 const USERS_FILE = path.join(__dirname, 'users.json');
 const MESSAGES_FILE = path.join(__dirname, 'messages.json');
@@ -132,7 +134,28 @@ async function loadMessages() {
     });
   }
 
+  migrateMessageHistory(nextHistory);
   return nextHistory;
+}
+
+function migrateMessageHistory(history) {
+  const general = history.get('channel:general') || [];
+  const joinLeave = history.get(JOIN_LEAVE_ROOM_KEY) || [];
+  const legacyActivity = history.get('channel:member-activity') || [];
+
+  const generalUserMessages = general.filter((message) => message.type !== 'system');
+  const systemMessages = [
+    ...joinLeave,
+    ...legacyActivity,
+    ...general.filter((message) => message.type === 'system')
+  ].slice(-MAX_HISTORY_LENGTH);
+
+  history.set('channel:general', generalUserMessages);
+  history.set(JOIN_LEAVE_ROOM_KEY, systemMessages);
+
+  ['channel:rules', 'channel:random', 'channel:tech', 'channel:member-activity'].forEach((key) => {
+    history.delete(key);
+  });
 }
 
 async function saveMessages() {
@@ -323,6 +346,7 @@ async function initDataFiles() {
   await ensureFile(MESSAGES_FILE, JSON.stringify({}, null, 2));
   usersCache = await loadUsers();
   messageHistory = await loadMessages();
+  await saveMessages();
 }
 
 app.post('/api/signup', async (req, res) => {
@@ -549,14 +573,12 @@ io.on('connection', (socket) => {
     socketId: socket.id
   });
 
+  addSystemMessage(JOIN_LEAVE_ROOM_KEY, `${nickname || username} joined the server`);
   socket.emit('system_message', {
-    roomKey: 'channel:general',
-    text: `Welcome back, ${nickname || username}`,
+    roomKey: JOIN_LEAVE_ROOM_KEY,
+    text: `${nickname || username} joined the server`,
     timestamp: Date.now()
   });
-
-  const activityRoomKey = 'channel:member-activity';
-  addSystemMessage(activityRoomKey, `${nickname || username} joined the server`);
 
   socket.broadcast.emit('user_joined', {
     username,
@@ -609,12 +631,18 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const channel = CHANNELS.find(c => c.id === roomId);
-    if (type === 'channel' && channel && channel.isReadOnly) {
-        if (typeof ack === 'function') {
-            ack({ success: false, error: 'This channel is read-only.' });
-        }
-        return;
+    if (type === 'channel' && READ_ONLY_CHANNEL_IDS.has(roomId)) {
+      if (typeof ack === 'function') {
+        ack({ success: false, error: 'This channel is read-only.' });
+      }
+      return;
+    }
+
+    if (type === 'channel' && !CHANNEL_IDS.includes(roomId)) {
+      if (typeof ack === 'function') {
+        ack({ success: false, error: 'Unknown channel.' });
+      }
+      return;
     }
 
     if (!applySlidingWindowLimit(messageBuckets, socket.user.id, MESSAGE_RATE_LIMIT, MESSAGE_RATE_WINDOW_MS)) {
@@ -650,8 +678,7 @@ io.on('connection', (socket) => {
     onlineUsers.delete(String(socket.user.id));
     broadcastUserList();
     
-    const activityRoomKey = 'channel:member-activity';
-    addSystemMessage(activityRoomKey, `${socket.user.nickname || username} left the server`);
+    addSystemMessage(JOIN_LEAVE_ROOM_KEY, `${socket.user.nickname || username} left the server`);
 
     socket.broadcast.emit('user_left', {
       username,

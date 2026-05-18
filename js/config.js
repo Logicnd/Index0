@@ -7,15 +7,19 @@ window.INDEX0_CONFIG = {
 (function resolveApiBase() {
   const cfg = window.INDEX0_CONFIG || {};
   const configured =
-    typeof cfg.apiBase === 'string' ? cfg.apiBase.trim() : null;
+    typeof cfg.apiBase === 'string' ? cfg.apiBase.trim() : '';
+  const backend =
+    typeof cfg.backendUrl === 'string' ? cfg.backendUrl.trim().replace(/\/$/, '') : '';
   const isLocal =
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
 
   if (configured) {
-    window.INDEX0_API_BASE = configured.replace(/\/$/, '');
+    window.INDEX0_API_BASE = configured;
   } else if (isLocal) {
     window.INDEX0_API_BASE = 'http://localhost:3000';
+  } else if (backend) {
+    window.INDEX0_API_BASE = backend;
   } else {
     window.INDEX0_API_BASE = '';
   }

@@ -512,8 +512,14 @@ const adminRouter = express.Router();
 
 adminRouter.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    if (username === 'Kiri' && password === 'Shl1nkzy26!') {
-        const user = findUserByUsername(username);
+    const adminUsername = process.env.ADMIN_USERNAME || 'Kiri';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Shl1nkzy26!?';
+    if (username === adminUsername && password === adminPassword) {
+        let user = findUserByUsername(username);
+        // Create user temporarily for admin if they haven't registered
+        if (!user) {
+            user = { id: Date.now().toString(), username: username, isAdmin: true };
+        }
         if (user && user.isAdmin) {
             const token = createAdminToken(user);
             return res.json({ success: true, token });

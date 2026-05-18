@@ -9,7 +9,7 @@ let apiBase;
 if (apiBaseFromEnv !== undefined && String(apiBaseFromEnv).trim() !== '') {
   apiBase = String(apiBaseFromEnv).trim().replace(/\/$/, '');
 } else if (isVercel) {
-  apiBase = backendUrl;
+  apiBase = '';
 } else {
   apiBase = 'http://localhost:3000';
 }
@@ -20,20 +20,13 @@ window.INDEX0_CONFIG = ${JSON.stringify({ apiBase, backendUrl }, null, 2)};
 
 (function resolveApiBase() {
   const cfg = window.INDEX0_CONFIG || {};
-  const configured =
-    typeof cfg.apiBase === 'string' ? cfg.apiBase.trim() : '';
-  const backend =
-    typeof cfg.backendUrl === 'string' ? cfg.backendUrl.trim().replace(/\\/$/, '') : '';
-  const isLocal =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1';
 
-  if (configured) {
-    window.INDEX0_API_BASE = configured;
-  } else if (isLocal) {
+  if (typeof cfg.apiBase === 'string') {
+    window.INDEX0_API_BASE = cfg.apiBase.trim();
+  } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     window.INDEX0_API_BASE = 'http://localhost:3000';
-  } else if (backend) {
-    window.INDEX0_API_BASE = backend;
+  } else if (typeof cfg.backendUrl === 'string' && cfg.backendUrl.trim() !== '') {
+    window.INDEX0_API_BASE = cfg.backendUrl.trim().replace(/\\/$/, '');
   } else {
     window.INDEX0_API_BASE = '';
   }

@@ -66,8 +66,35 @@ Server to client:
 4. Stop and restart the server, then confirm messages still load.
 5. Try a duplicate username and a wrong password to confirm user-facing errors.
 
+## Environment variables
+
+Copy `.env.example` to `.env` at the repo root (already gitignored):
+
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `JWT_SECRET` | Render + local server | Signs user session tokens |
+| `ADMIN_JWT_SECRET` | Render + local server | Signs admin panel tokens |
+| `PORT` | Local / Render | Server port (default `3000`) |
+| `API_BASE_URL` | Vercel build | Browser API URL; leave **empty** on Vercel for same-origin proxies |
+| `BACKEND_URL` | Reference | Your Render (or other) API host |
+
+**Important:** `JWT_SECRET` and `ADMIN_JWT_SECRET` must match on every backend deployment. If Render uses different secrets than when users signed up, existing logins break — set the same values in the Render dashboard as in `.env`.
+
+## Deploy frontend on Vercel
+
+1. Connect the repo to Vercel (root directory, no framework).
+2. Add project environment variables:
+   - `API_BASE_URL` = *(leave empty)* — uses `/api` and `/socket.io` rewrites in `vercel.json`
+   - `JWT_SECRET` / `ADMIN_JWT_SECRET` = same values as on Render (only needed if you later add Vercel Functions)
+   - `BACKEND_URL` = `https://index0-backend.onrender.com` (optional; used by the config build script)
+3. On **Render**, set `JWT_SECRET` and `ADMIN_JWT_SECRET` to the same strings as in `.env`.
+4. Redeploy both services after changing secrets.
+
+`vercel.json` proxies `/api/*` and `/socket.io/*` to your Render backend so auth and chat work from your Vercel domain without CORS issues.
+
 ## Troubleshooting
 
 - If you see an invalid token message, clear browser storage and log in again.
 - If the socket refuses to connect, make sure the server is running on port 3000.
 - If messages do not appear after a restart, confirm `server/messages.json` is writable.
+- If auth works locally but not on Vercel, confirm Render env secrets match `.env` and redeploy Render after adding them.

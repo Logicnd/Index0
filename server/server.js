@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const app = express();
 const server = http.createServer(app);
@@ -20,8 +21,8 @@ const io = socketIO(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = 'index0-secure-key-2024';
-const ADMIN_JWT_SECRET = 'index0-admin-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'index0-secure-key-2024';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'index0-admin-secret-key-2024';
 const SALT_ROUNDS = 10;
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_HISTORY_LENGTH = 200;

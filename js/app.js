@@ -1,3 +1,5 @@
+const API_BASE = window.INDEX0_API_BASE;
+
 // =============================================
 //          REMOTE LOGGING SETUP
 // =============================================
@@ -73,10 +75,6 @@ const CHANNELS = [
 ];
 
 const ADMIN_USERNAMES = ['kiri']; // Case-insensitive check will be used
-
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-  ? 'http://localhost:3000' 
-  : 'https://index0-backend.onrender.com';
 
 const STORAGE_KEYS = {
   token: 'index0_token',

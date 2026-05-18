@@ -11,14 +11,14 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: (origin, callback) => callback(null, true), // Allow all origins for Vercel
     methods: ['GET', 'POST'],
     credentials: true
   },
   transports: ['websocket', 'polling']
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const JWT_SECRET = 'index0-secure-key-2024';
 const SALT_ROUNDS = 10;
 const MAX_MESSAGE_LENGTH = 500;
@@ -40,7 +40,7 @@ let messageBuckets = new Map();
 let messageSaveTimer = null;
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: (origin, callback) => callback(null, true), // Allow all origins for Vercel
   methods: ['GET', 'POST'],
   credentials: true
 }));

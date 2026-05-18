@@ -4,6 +4,10 @@ const CHANNELS = [
   { id: 'tech', name: '#tech' }
 ];
 
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+  ? 'http://localhost:3000' 
+  : 'https://YOUR_BACKEND_URL.onrender.com'; // IMPORTANT: Replace this with your actual hosted backend URL!
+
 const STORAGE_KEYS = {
   token: 'index0_token',
   user: 'index0_user',
@@ -193,7 +197,9 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
-  return fetch(url, {
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+
+  return fetch(fullUrl, {
     ...options,
     signal: controller.signal
   }).finally(() => window.clearTimeout(timeoutId));
@@ -743,7 +749,7 @@ function connectSocket(token) {
     state.socket.disconnect();
   }
 
-  state.socket = io({
+  state.socket = io(API_BASE, {
     auth: { token },
     transports: ['websocket', 'polling'],
     reconnection: true,

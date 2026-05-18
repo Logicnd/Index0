@@ -1,8 +1,78 @@
+// =============================================
+//          REMOTE LOGGING SETUP
+// =============================================
+(function setupRemoteLogging() {
+    const originalConsole = {
+        log: console.log.bind(console),
+        error: console.error.bind(console),
+        warn: console.warn.bind(console),
+        info: console.info.bind(console),
+        debug: console.debug.bind(console),
+    };
+
+    const sendLogToServer = (level, args) => {
+        try {
+            const message = args.map(arg => {
+                if (typeof arg === 'object' && arg !== null) {
+                    return JSON.stringify(arg, null, 2);
+                }
+                return String(arg);
+            }).join(' ');
+
+            // Use sendBeacon for reliability, especially on page unload
+            navigator.sendBeacon(`${API_BASE}/api/log`, JSON.stringify({
+                level,
+                message,
+                context: { userAgent: navigator.userAgent, url: window.location.href }
+            }));
+        } catch (e) {
+            // Avoid an infinite loop if logging the logging error fails
+            originalConsole.error('Failed to send log to server:', e);
+        }
+    };
+
+    console.log = function(...args) {
+        originalConsole.log(...args);
+        sendLogToServer('log', args);
+    };
+    console.error = function(...args) {
+        originalConsole.error(...args);
+        sendLogToServer('error', args);
+    };
+    console.warn = function(...args) {
+        originalConsole.warn(...args);
+        sendLogToServer('warn', args);
+    };
+    console.info = function(...args) {
+        originalConsole.info(...args);
+        sendLogToServer('info', args);
+    };
+    console.debug = function(...args) {
+        originalConsole.debug(...args);
+        sendLogToServer('debug', args);
+    };
+
+    window.addEventListener('error', event => {
+        console.error('Unhandled Global Error:', event.message, 'at', event.filename, ':', event.lineno);
+    });
+
+    window.addEventListener('unhandledrejection', event => {
+        console.error('Unhandled Promise Rejection:', event.reason);
+    });
+
+    originalConsole.log('Remote logging initialized.');
+})();
+
+
 const CHANNELS = [
   { id: 'general', name: '#general' },
+  { id: 'rules', name: '#rules', isReadOnly: true },
   { id: 'random', name: '#random' },
-  { id: 'tech', name: '#tech' }
+  { id: 'tech', name: '#tech' },
+  { id: 'member-activity', name: '#member-activity', isHidden: true }
 ];
+
+const ADMIN_USERNAMES = ['kiri']; // Case-insensitive check will be used
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
   ? 'http://localhost:3000' 
@@ -26,11 +96,11 @@ const dom = {
   sendBtn: document.getElementById('sendBtn'),
   roomLabel: document.getElementById('roomLabel'),
   roomTypeLabel: document.getElementById('roomTypeLabel'),
-  logoutBtn: document.getElementById('logoutBtn'),
   
   profilePanel: document.getElementById('profilePanel'),
   profileUsername: document.getElementById('profileUsername'),
-  editProfileBtn: document.getElementById('editProfileBtn'),
+  settingsBtn: document.getElementById('settingsBtn'), // Changed from editProfileBtn
+  logoutBtn: document.getElementById('logoutBtn'),
   
   authModal: document.getElementById('authModal'),
   authTitle: document.getElementById('authTitle'),
@@ -44,13 +114,15 @@ const dom = {
   // Settings Modal
   settingsModal: document.getElementById('settingsModal'),
   settingsCloseBtn: document.getElementById('settingsCloseBtn'),
-  usernameForm: document.getElementById('usernameForm'),
-  newUsernameInput: document.getElementById('newUsername'),
-  usernameError: document.getElementById('usernameError'),
-  passwordForm: document.getElementById('passwordForm'),
-  currentPasswordInput: document.getElementById('currentPassword'),
-  newPasswordInput: document.getElementById('newPassword'),
-  passwordError: document.getElementById('passwordError')
+  settingsTabs: document.querySelectorAll('.modal-tab'),
+  settingsTabContents: document.querySelectorAll('.modal-tab-content'),
+  
+  // Profile Tab
+  profileForm: document.getElementById('profileForm'),
+  displayNameInput: document.getElementById('displayNameInput'),
+  
+  // Logout Button in Modal
+  logoutModalBtn: document.getElementById('logoutModalBtn')
 };
 
 const typingIndicator = document.createElement('div');
@@ -71,7 +143,7 @@ const state = {
   currentRoom: { type: 'channel', id: 'general' },
   onlineUsers: [],
   messages: new Map(),
-  unread: new Map(),
+  unreadCounts: new Map(),
   socket: null,
   typingTimeout: null,
   isTyping: false,
@@ -99,7 +171,11 @@ function hashString(input) {
 }
 
 function getHandleClass(handle) {
-  return `handle-tone-${hashString(handle) % 12}`;
+    const user = state.onlineUsers.find(u => u.username === handle);
+    if (user && user.isAdmin) {
+        return 'admin-handle';
+    }
+    return `handle-tone-${hashString(handle) % 12}`;
 }
 
 function getRoomKey(type, id) {
@@ -183,36 +259,46 @@ function setSession(token, user) {
 function clearSession() {
   localStorage.removeItem(STORAGE_KEYS.token);
   localStorage.removeItem(STORAGE_KEYS.user);
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
 }
 
 function getStoredToken() {
-  return localStorage.getItem(STORAGE_KEYS.token) || localStorage.getItem('token');
+  return localStorage.getItem(STORAGE_KEYS.token);
 }
 
 function getStoredUser() {
-  const raw = localStorage.getItem(STORAGE_KEYS.user) || localStorage.getItem('user');
+  const raw = localStorage.getItem(STORAGE_KEYS.user);
   if (!raw) {
     return null;
   }
 
   try {
-    return JSON.parse(raw);
+    const user = JSON.parse(raw);
+    user.isAdmin = ADMIN_USERNAMES.includes(user.username.toLowerCase());
+    return user;
   } catch {
     return null;
   }
 }
 
-function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
+function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = window.setTimeout(() => {
+    console.warn(`Request to ${url} timed out after ${timeoutMs}ms`);
+    controller.abort();
+  }, timeoutMs);
 
   const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
 
   return fetch(fullUrl, {
     ...options,
     signal: controller.signal
+  }).catch(error => {
+      if (error.name === 'AbortError') {
+          // This is our self-induced timeout
+          throw new Error(`Request timed out. The server didn't respond in time.`);
+      }
+      // This is a different network error (e.g., CORS, DNS, server unreachable)
+      throw new Error(`Network error: ${error.message}`);
   }).finally(() => window.clearTimeout(timeoutId));
 }
 
@@ -256,20 +342,18 @@ function addMessage(roomKey, message) {
   state.messages.set(roomKey, roomMessages);
 }
 
-function markUnread(roomKey) {
-  if (!roomKey) {
-    return;
-  }
-
-  if (!isCurrentRoomFromKey(roomKey)) {
-    state.unread.set(roomKey, true);
-  }
+function incrementUnread(roomKey) {
+    if (!roomKey || isCurrentRoomFromKey(roomKey)) {
+        return;
+    }
+    const currentCount = state.unreadCounts.get(roomKey) || 0;
+    state.unreadCounts.set(roomKey, currentCount + 1);
 }
 
 function clearUnread(roomKey) {
-  if (state.unread.has(roomKey)) {
-    state.unread.delete(roomKey);
-  }
+    if (state.unreadCounts.has(roomKey)) {
+        state.unreadCounts.delete(roomKey);
+    }
 }
 
 function isCurrentRoomFromKey(roomKey) {
@@ -293,6 +377,21 @@ function renderMessages() {
   const roomMessages = state.messages.get(roomKey) || [];
 
   dom.chatLog.innerHTML = '';
+  
+  const channel = CHANNELS.find(c => c.id === state.currentRoom.id);
+  if (channel && channel.id === 'rules' && !roomMessages.length) {
+      const rules = [
+          "Be respectful to all members.",
+          "No spamming or self-promotion.",
+          "No NSFW content.",
+          "Do not share personal information.",
+          "Follow the Discord Terms of Service."
+      ];
+      rules.forEach(rule => {
+          addMessage(roomKey, { type: 'system', text: rule, timestamp: Date.now() });
+      });
+  }
+
 
   if (!roomMessages.length) {
     const emptyState = document.createElement('div');
@@ -311,7 +410,12 @@ function renderMessages() {
 
   roomMessages.forEach((message) => {
     const row = document.createElement('div');
+    const isCurrentUserMsg = message.userId === state.currentUser.id;
     row.className = message.type === 'system' ? 'msg system' : 'msg';
+    if (isCurrentUserMsg) {
+        row.classList.add('current-user');
+    }
+
 
     const timeNode = document.createElement('span');
     timeNode.className = 'time';
@@ -325,8 +429,10 @@ function renderMessages() {
       row.appendChild(bodyNode);
     } else {
       const handleNode = document.createElement('span');
-      handleNode.className = `handle ${getHandleClass(message.handle)}`;
-      handleNode.textContent = `${message.handle}: `;
+      const user = state.onlineUsers.find(u => u.id === message.userId);
+      const displayName = user?.nickname || user?.username || message.handle || 'User';
+      handleNode.className = `handle ${getHandleClass(displayName)}`;
+      handleNode.textContent = `${displayName}: `;
 
       const bodyNode = document.createElement('span');
       bodyNode.className = 'body';
@@ -358,7 +464,7 @@ function updateRoomHeader() {
     dom.roomTypeLabel.textContent = 'channel';
   } else {
     const peer = state.onlineUsers.find((user) => String(user.id) === String(state.currentRoom.id));
-    dom.roomLabel.textContent = peer ? `@${peer.username}` : `@${state.currentRoom.id}`;
+    dom.roomLabel.textContent = peer ? `@${peer.nickname || peer.username}` : `@${state.currentRoom.id}`;
     dom.roomTypeLabel.textContent = 'direct message';
   }
 
@@ -385,7 +491,7 @@ function renderSidebar() {
   }
 
   dom.channelList.innerHTML = '';
-  CHANNELS.forEach((channel) => {
+  CHANNELS.filter(c => !c.isHidden).forEach((channel) => {
     const roomKey = `channel:${channel.id}`;
     const item = document.createElement('div');
     item.className = 'sidebar-item';
@@ -397,10 +503,12 @@ function renderSidebar() {
     label.textContent = channel.name;
     item.appendChild(label);
 
-    if (state.unread.has(roomKey)) {
-      const dot = document.createElement('span');
-      dot.className = 'unread-dot';
-      item.appendChild(dot);
+    const unreadCount = state.unreadCounts.get(roomKey);
+    if (unreadCount > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'notification-badge';
+        badge.textContent = unreadCount > 999 ? '1k+' : unreadCount;
+        item.appendChild(badge);
     }
 
     item.addEventListener('click', () => switchRoom('channel', channel.id));
@@ -425,13 +533,15 @@ function renderSidebar() {
       }
 
       const label = document.createElement('span');
-      label.textContent = `@${peer.username}`;
+      label.textContent = `@${peer.nickname || peer.username}`;
       item.appendChild(label);
 
-      if (state.unread.has(roomKey)) {
-        const dot = document.createElement('span');
-        dot.className = 'unread-dot';
-        item.appendChild(dot);
+      const unreadCount = state.unreadCounts.get(roomKey);
+      if (unreadCount > 0) {
+          const badge = document.createElement('span');
+          badge.className = 'notification-badge';
+          badge.textContent = unreadCount > 999 ? '1k+' : unreadCount;
+          item.appendChild(badge);
       }
 
       item.addEventListener('click', () => switchRoom('dm', peer.id));
@@ -459,11 +569,18 @@ function renderUsers() {
     return;
   }
 
-  state.onlineUsers.forEach((user) => {
+  const sortedUsers = [...state.onlineUsers].sort((a, b) => {
+      const aName = a.nickname || a.username;
+      const bName = b.nickname || b.username;
+      return aName.localeCompare(bName);
+  });
+
+  sortedUsers.forEach((user) => {
     const item = document.createElement('div');
     item.className = 'user-item';
-    if (state.currentUser && String(user.id) === String(state.currentUser.id)) {
-      item.classList.add('self');
+    const isCurrentUser = state.currentUser && String(user.id) === String(state.currentUser.id);
+    if (isCurrentUser) {
+        item.classList.add('current-user');
     }
 
     const status = document.createElement('span');
@@ -471,20 +588,24 @@ function renderUsers() {
     status.textContent = '●';
 
     const label = document.createElement('span');
-    label.textContent = `${user.username}${state.currentUser && String(user.id) === String(state.currentUser.id) ? ' (you)' : ''}`;
+    label.textContent = `${user.nickname || user.username}`;
 
     item.append(status, label);
 
     if (user.isAdmin) {
       const badge = document.createElement('span');
-      badge.className = 'user-admin-badge';
+      badge.className = 'admin-badge';
       badge.textContent = '♛';
       item.appendChild(badge);
     }
 
-    if (!state.currentUser || String(user.id) !== String(state.currentUser.id)) {
-      item.addEventListener('click', () => switchRoom('dm', user.id));
-    }
+    item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // In a real app, you'd show a context menu or profile modal
+        if (!isCurrentUser) {
+            switchRoom('dm', user.id);
+        }
+    });
 
     dom.userList.appendChild(item);
   });
@@ -593,7 +714,7 @@ function appendMessage(roomKey, message, options = {}) {
   if (options.render !== false && isCurrentRoomFromKey(roomKey)) {
     renderMessages();
   } else {
-    markUnread(roomKey);
+    incrementUnread(roomKey);
     renderSidebar();
   }
 }
@@ -601,7 +722,7 @@ function appendMessage(roomKey, message, options = {}) {
 function createLocalMessage(text) {
   return {
     type: 'user',
-    handle: state.currentUser.username,
+    handle: state.currentUser.nickname || state.currentUser.username,
     text,
     timestamp: Date.now(),
     userId: state.currentUser.id,
@@ -678,17 +799,12 @@ function handleSocketMessage(message) {
 }
 
 function handleSocketSystemMessage(message) {
-  const roomKey = message.roomKey || getRoomKey(state.currentRoom.type, state.currentRoom.id);
-  if (!roomKey) {
-    return;
-  }
-
-  appendMessage(roomKey, {
-    type: 'system',
-    text: message.text,
-    timestamp: message.timestamp,
-    roomKey
-  });
+    const activityChannelKey = 'channel:member-activity';
+    appendMessage(activityChannelKey, {
+        type: 'system',
+        text: message.text,
+        timestamp: message.timestamp,
+    });
 }
 
 function handleSocketTyping(payload) {
@@ -717,18 +833,20 @@ function handleSocketTyping(payload) {
 }
 
 function handleUserListUpdate(users) {
-  state.onlineUsers = Array.isArray(users) ? users : [];
+  state.onlineUsers = (Array.isArray(users) ? users : []).map(u => ({
+      ...u,
+      isAdmin: ADMIN_USERNAMES.includes(u.username.toLowerCase())
+  }));
   renderUsers();
   renderSidebar();
   syncDmSubscriptions();
 }
 
-function handleJoinLeaveNotice() {
-  renderUsers();
-  renderSidebar();
+function handleJoinLeaveNotice(data) {
+    handleUserListUpdate(data.onlineUsers);
 }
 
-function updateNickUi() {
+function updateProfileUI() {
   if (!state.currentUser) {
     return;
   }
@@ -737,11 +855,14 @@ function updateNickUi() {
     dom.profilePanel.hidden = false;
   }
   if (dom.profileUsername) {
-    dom.profileUsername.textContent = state.currentUser.username;
+    dom.profileUsername.textContent = state.currentUser.nickname || state.currentUser.username;
+  }
+  if (dom.displayNameInput) {
+      dom.displayNameInput.value = state.currentUser.nickname || '';
   }
 }
 
-function resetNickUi() {
+function resetProfileUI() {
   if (dom.profilePanel) {
     dom.profilePanel.hidden = true;
   }
@@ -805,43 +926,103 @@ function connectSocket(token) {
   state.socket.on('user_joined', handleJoinLeaveNotice);
   state.socket.on('user_left', handleJoinLeaveNotice);
 
-  state.socket.on('user_list', (users) => {
-    state.users = users;
-    renderUserList();
-  });
-
   state.socket.on('user_updated', (updatedUser) => {
-    const userIndex = state.users.findIndex(u => u.id === updatedUser.id);
+    const userIndex = state.onlineUsers.findIndex(u => u.id === updatedUser.id);
     if (userIndex > -1) {
-      state.users[userIndex].username = updatedUser.username;
-      renderUserList();
+      state.onlineUsers[userIndex] = { ...state.onlineUsers[userIndex], ...updatedUser };
     }
-    // Also update the chat header if the updated user is the one we are chatting with
-    if (state.activeRoom && state.activeRoom.type === 'user' && state.activeRoom.id === updatedUser.id) {
-      dom.chatHeader.textContent = `Chat with ${updatedUser.username}`;
+    if (state.currentUser.id === updatedUser.id) {
+        state.currentUser = { ...state.currentUser, ...updatedUser };
+        updateProfileUI();
     }
-  });
-
-  state.socket.on('new_message', (message) => {
-    const roomKey = getRoomKey(message.room.type, message.room.id, state.currentUser.id);
-    if (state.activeRoom && getRoomKey(state.activeRoom.type, state.activeRoom.id, state.currentUser.id) === roomKey) {
-      renderMessage(message);
+    renderUsers();
+    renderSidebar();
+    if (isCurrentRoom('dm', updatedUser.id)) {
+        updateRoomHeader();
     }
-    // Add notification logic here later
   });
 }
 
-function getRoomKey(type, id, currentUserId) {
-  if (type === 'channel') {
-    return `channel:${id}`;
-  }
+function openSettingsModal() {
+    dom.settingsModal.style.display = 'block';
+    // Set initial tab
+    if (dom.settingsTabs.length > 0) {
+        dom.settingsTabs[0].click();
+    }
+}
 
-  if (!state.currentUser) {
-    return null;
-  }
+function closeSettingsModal() {
+    dom.settingsModal.style.display = 'none';
+}
 
-  const ids = [String(state.currentUser.id), String(id)].sort();
-  return `dm:${ids[0]}:${ids[1]}`;
+function setupEventListeners() {
+    if (dom.toggleSidebarBtn) {
+        dom.toggleSidebarBtn.addEventListener('click', () => {
+            dom.sidebar.classList.toggle('collapsed');
+            dom.app.classList.toggle('sidebar-collapsed');
+        });
+    }
+
+    if (dom.sendBtn && dom.messageInput) {
+        dom.sendBtn.addEventListener('click', sendMessage);
+        dom.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        dom.messageInput.addEventListener('input', handleInputTyping);
+    }
+
+    if (dom.authForm) {
+        dom.authForm.addEventListener('submit', handleAuthSubmit);
+    }
+
+    if (dom.authToggle) {
+        dom.authToggle.addEventListener('click', () => {
+            setAuthMode(state.authMode === 'login' ? 'signup' : 'login');
+        });
+    }
+
+    if (dom.settingsBtn) {
+        dom.settingsBtn.addEventListener('click', openSettingsModal);
+    }
+    
+    if (dom.logoutBtn) {
+        dom.logoutBtn.addEventListener('click', logout);
+    }
+
+    if (dom.settingsCloseBtn) {
+        dom.settingsCloseBtn.addEventListener('click', closeSettingsModal);
+    }
+
+    if (dom.settingsTabs) {
+        dom.settingsTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.tab;
+                
+                dom.settingsTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                dom.settingsTabContents.forEach(c => c.classList.remove('active'));
+                document.getElementById(target).classList.add('active');
+            });
+        });
+    }
+
+    if (dom.profileForm) {
+        dom.profileForm.addEventListener('submit', handleProfileUpdate);
+    }
+
+    if (dom.logoutModalBtn) {
+        dom.logoutModalBtn.addEventListener('click', logout);
+    }
+
+    window.addEventListener('click', (e) => {
+        if (e.target === dom.settingsModal) {
+            closeSettingsModal();
+        }
+    });
 }
 
 async function bootstrap() {

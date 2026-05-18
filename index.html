@@ -32,8 +32,7 @@
                 <span class="profile-status">#Online</span>
             </div>
             <div class="profile-actions">
-                <button id="editProfileBtn" class="icon-btn" title="Edit Profile">⚙️</button>
-                <button id="logoutBtn" class="icon-btn" title="Logout">⎋</button>
+                <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
             </div>
         </div>
     </aside>
@@ -44,7 +43,7 @@
                 <button id="toggleSidebarBtn" class="icon-btn" title="Toggle sidebar">☰</button>
 
                 <div>
-                    <span id="roomLabel">#main</span>
+                    <span id="roomLabel">#general</span>
                     <span id="roomTypeLabel">channel</span>
                 </div>
             </div>
@@ -70,23 +69,29 @@
         <button class="close-btn" id="settingsCloseBtn">&times;</button>
         <h2>Settings</h2>
         
-        <div class="form-section">
-            <h4>Change Username</h4>
-            <form id="usernameForm">
-                <input type="text" id="newUsername" placeholder="New username" required autocomplete="off">
-                <button type="submit">Save</button>
-                <div id="usernameError" class="error-message"></div>
+        <div class="modal-tabs">
+            <div class="modal-tab active" data-tab="profile">Profile</div>
+            <div class="modal-tab" data-tab="appearance">Appearance</div>
+        </div>
+
+        <div id="tab-profile" class="modal-tab-content active">
+            <h3>Profile Settings</h3>
+            <form id="profileForm">
+                <label for="displayNameInput">Display Name</label>
+                <input type="text" id="displayNameInput" placeholder="Enter a new display name" maxlength="32">
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
             </form>
         </div>
 
-        <div class="form-section">
-            <h4>Change Password</h4>
-            <form id="passwordForm">
-                <input type="password" id="currentPassword" placeholder="Current password" required>
-                <input type="password" id="newPassword" placeholder="New password" required>
-                <button type="submit">Save</button>
-                <div id="passwordError" class="error-message"></div>
-            </form>
+        <div id="tab-appearance" class="modal-tab-content">
+            <h3>Appearance Settings</h3>
+            <p>Appearance options will be available soon!</p>
+        </div>
+        
+        <div class="modal-footer">
+            <button id="logoutModalBtn" class="btn-danger">Logout</button>
         </div>
     </div>
 </div>
@@ -100,7 +105,7 @@
     </main>
 
     <aside class="userbar" id="userbar">
-        <div class="section-title">USERS - 1</div>
+        <div class="section-title">USERS - 0</div>
         <div id="userList"></div>
     </aside>
 

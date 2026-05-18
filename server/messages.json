@@ -139,6 +139,14 @@
       "type": "system",
       "text": "IamTheBOSS joined the server",
       "timestamp": 1779063710581
+    },
+    {
+      "type": "user",
+      "handle": "IamTheBOSS",
+      "text": "p",
+      "timestamp": 1779064734454,
+      "userId": "1779057644481",
+      "roomKey": "channel:general"
     }
   ],
   "channel:random": [

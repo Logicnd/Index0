@@ -347,145 +347,119 @@ button {
 .modal {
     display: none;
     position: fixed;
-    top: 0;
+    z-index: 1000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-}
-
-.modal.active {
-    display: flex;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
 }
 
 .modal-content {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 30px;
-    width: 90%;
-    max-width: 400px;
-    border-radius: 4px;
+    background-color: #1f2937;
+    margin: 10% auto;
+    padding: 2rem;
+    border: 1px solid #374151;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 16px;
+    color: #d1d5db;
 }
 
 .modal-content h2 {
-    margin-bottom: 20px;
-    color: var(--accent);
-    font-size: 20px;
+    margin-top: 0;
+    color: #06b6d4;
+}
+
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #374151;
+    margin-bottom: 1rem;
+}
+
+.modal-tab {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.modal-tab.active {
+    border-bottom-color: #06b6d4;
+    color: #06b6d4;
+}
+
+.modal-tab-content {
+    display: none;
+}
+
+.modal-tab-content.active {
+    display: block;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 0.5rem;
 }
 
 .modal-content input {
     width: 100%;
-    background: var(--panel-soft);
-    color: var(--text);
-    border: 1px solid var(--border);
-    padding: 10px;
-    margin-bottom: 15px;
-    font-size: 14px;
+    padding: 0.75rem;
+    border-radius: 24px;
+    border: 1px solid #374151;
+    background-color: #111827;
+    color: #d1d5db;
+    margin-bottom: 1rem;
 }
 
-.modal-content input:focus {
-    border-color: var(--accent);
-    outline: none;
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
-.modal-content button {
-    width: 100%;
-    background: var(--accent);
-    color: #000;
+.modal-buttons button {
+    padding: 0.5rem 1rem;
+    border-radius: 24px;
     border: none;
-    padding: 10px;
     cursor: pointer;
-    font-size: 14px;
+}
+
+.modal-buttons .btn-primary {
+    background-color: #06b6d4;
+    color: #000;
+}
+
+.modal-buttons .btn-secondary {
+    background-color: #374151;
+    color: #d1d5db;
+}
+
+.notification-badge {
+    background-color: #06b6d4;
+    color: #000;
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
     font-weight: bold;
-    margin-bottom: 15px;
+    margin-left: auto;
 }
 
-.modal-content button:hover {
-    opacity: 0.9;
+.user-bar .user.current-user {
+    background-color: rgba(6, 182, 212, 0.05);
 }
 
-#toggleAuthMode {
-    text-align: center;
-    font-size: 12px;
-    color: var(--muted);
+.chat-messages .message.current-user {
+    background-color: #f0f9ff;
 }
 
-.toggle-link {
-    color: var(--accent);
-    cursor: pointer;
-    text-decoration: underline;
+.dark-mode .chat-messages .message.current-user {
+    background-color: #1f2937;
 }
 
-.toggle-link:hover {
-    opacity: 0.8;
-}
-
-.error-message {
-    display: none;
-    background: rgba(255, 0, 0, 0.1);
-    border: 1px solid #ff0000;
-    color: #ff0000;
-    padding: 8px;
-    margin-top: 10px;
-    font-size: 12px;
-    text-align: center;
-}
-
-.error-message.visible {
-    display: block;
-}
-
-.msg.pending {
-    opacity: 0.72;
-}
-
-.typing-indicator {
-    min-height: 18px;
-    padding: 4px 14px 0;
-    color: var(--muted-dark);
-    font-size: 11px;
-    font-style: italic;
-}
-
-.connection-status {
-    color: var(--muted-dark);
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.handle-tone-0 { color: #00f0ff; }
-.handle-tone-1 { color: #ff6b6b; }
-.handle-tone-2 { color: #4ecdc4; }
-.handle-tone-3 { color: #ffe66d; }
-.handle-tone-4 { color: #a8e6cf; }
-.handle-tone-5 { color: #f7aef8; }
-.handle-tone-6 { color: #f9d371; }
-.handle-tone-7 { color: #7afcff; }
-.handle-tone-8 { color: #ff9f1c; }
-.handle-tone-9 { color: #b388ff; }
-.handle-tone-10 { color: #9ef01a; }
-.handle-tone-11 { color: #f15bb5; }
-
-.user-admin-badge {
-    color: var(--accent);
-    margin-left: 6px;
-}
-
-.topbar .icon-btn {
-    margin-left: 8px;
-}
-
-.status-pill {
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 10px;
-    padding: 3px 8px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+.user-bar .user .admin-badge {
+    color: red;
+    margin-left: 5px;
 }
 
 /* MOBILE */
@@ -542,4 +516,41 @@ button {
 
 .form-section .error-message {
     margin-top: 5px;
+}
+
+.channel-list,
+.user-bar {
+    background-color: #1f2937;
+    padding: 1rem;
+    overflow-y: auto;
+    border-radius: 16px;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #111827;
+    border-radius: 16px;
+}
+
+.chat-input input {
+    flex-grow: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid #374151;
+    background-color: #1f2937;
+    color: #d1d5db;
+    border-radius: 24px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.chat-input button {
+    background-color: #06b6d4;
+    color: #000;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-left: 0.5rem;
 }

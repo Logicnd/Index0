@@ -64,6 +64,33 @@
     </div>
 </div>
 
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <button class="close-btn" id="settingsCloseBtn">&times;</button>
+        <h2>Settings</h2>
+        
+        <div class="form-section">
+            <h4>Change Username</h4>
+            <form id="usernameForm">
+                <input type="text" id="newUsername" placeholder="New username" required autocomplete="off">
+                <button type="submit">Save</button>
+                <div id="usernameError" class="error-message"></div>
+            </form>
+        </div>
+
+        <div class="form-section">
+            <h4>Change Password</h4>
+            <form id="passwordForm">
+                <input type="password" id="currentPassword" placeholder="Current password" required>
+                <input type="password" id="newPassword" placeholder="New password" required>
+                <button type="submit">Save</button>
+                <div id="passwordError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
         <section class="chat-log" id="chatLog"></section>
 
         <footer class="input-area">

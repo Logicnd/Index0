@@ -548,3 +548,70 @@ initDataFiles()
     console.error('Failed to initialize data files:', error);
     process.exit(1);
   });
+
+// Middleware to protect routes
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
+
+// Change Username
+app.post('/api/user/username', authenticateToken, async (req, res) => {
+    const { newUsername } = req.body;
+    const userId = req.user.id;
+
+    if (!newUsername || typeof newUsername !== 'string' || newUsername.trim().length < 3) {
+        return res.status(400).json({ error: 'Invalid username.' });
+    }
+
+    const user = usersCache.users.find(u => u.id === userId);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Check if username is already taken
+    if (usersCache.users.some(u => u.username.toLowerCase() === newUsername.trim().toLowerCase() && u.id !== userId)) {
+        return res.status(409).json({ error: 'Username is already taken.' });
+    }
+
+    user.username = newUsername.trim();
+    await saveUsers();
+    
+    // Optionally, broadcast this change to other users
+    io.emit('user_updated', { id: userId, username: user.username });
+
+    res.json({ message: 'Username updated successfully.' });
+});
+
+// Change Password
+app.post('/api/user/password', authenticateToken, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'Invalid password data.' });
+    }
+
+    const user = usersCache.users.find(u => u.id === userId);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+        return res.status(403).json({ error: 'Incorrect current password.' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await saveUsers();
+
+    res.json({ message: 'Password updated successfully.' });
+});

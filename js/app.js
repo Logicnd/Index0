@@ -39,7 +39,18 @@ const dom = {
   passwordInput: document.getElementById('password'),
   authSubmitBtn: document.getElementById('authSubmit'),
   authToggle: document.getElementById('authToggle'),
-  authError: document.getElementById('authError')
+  authError: document.getElementById('authError'),
+
+  // Settings Modal
+  settingsModal: document.getElementById('settingsModal'),
+  settingsCloseBtn: document.getElementById('settingsCloseBtn'),
+  usernameForm: document.getElementById('usernameForm'),
+  newUsernameInput: document.getElementById('newUsername'),
+  usernameError: document.getElementById('usernameError'),
+  passwordForm: document.getElementById('passwordForm'),
+  currentPasswordInput: document.getElementById('currentPassword'),
+  newPasswordInput: document.getElementById('newPassword'),
+  passwordError: document.getElementById('passwordError')
 };
 
 const typingIndicator = document.createElement('div');
@@ -793,253 +804,44 @@ function connectSocket(token) {
   state.socket.on('user_list_update', handleUserListUpdate);
   state.socket.on('user_joined', handleJoinLeaveNotice);
   state.socket.on('user_left', handleJoinLeaveNotice);
-}
 
-function ensureCurrentRoomSubscription() {
-  if (!state.currentUser) {
-    return;
-  }
+  state.socket.on('user_list', (users) => {
+    state.users = users;
+    renderUserList();
+  });
 
-  if (state.currentRoom.type === 'channel') {
-    joinRoom('channel', state.currentRoom.id);
-    return;
-  }
-
-  joinRoom('dm', state.currentRoom.id);
-}
-
-async function switchRoom(type, id) {
-  if (state.currentRoom.type === type && String(state.currentRoom.id) === String(id)) {
-    return;
-  }
-
-  state.currentRoom = { type, id: String(id) };
-  updateRoomHeader();
-  ensureCurrentRoomSubscription();
-  renderSidebar();
-  renderTypingIndicator();
-  renderMessages();
-  await loadRoomHistory(type, id);
-}
-
-async function handleAuthSubmit(event) {
-  event.preventDefault();
-  clearAuthError();
-
-  const username = dom.usernameInput ? dom.usernameInput.value.trim() : '';
-  const password = dom.passwordInput ? dom.passwordInput.value : '';
-
-  if (!username || !password) {
-    showAuthError('Please enter a username and password.');
-    return;
-  }
-
-  if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
-    showAuthError('Username must be 3-20 characters and use letters, numbers, or underscores.');
-    return;
-  }
-
-  if (password.length < 4) {
-    showAuthError('Password must be at least 4 characters.');
-    return;
-  }
-
-  const endpoint = state.authMode === 'signup' ? '/api/signup' : '/api/login';
-  dom.authSubmitBtn.disabled = true;
-  dom.authSubmitBtn.textContent = 'Working...';
-
-  try {
-    const response = await fetchWithTimeout(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Authentication failed');
+  state.socket.on('user_updated', (updatedUser) => {
+    const userIndex = state.users.findIndex(u => u.id === updatedUser.id);
+    if (userIndex > -1) {
+      state.users[userIndex].username = updatedUser.username;
+      renderUserList();
     }
-
-    setSession(data.token, data.user);
-    await startChat(data.user, data.token);
-  } catch (error) {
-    showAuthError(error.message || 'Authentication failed.');
-  } finally {
-    dom.authSubmitBtn.disabled = false;
-    dom.authSubmitBtn.textContent = state.authMode === 'signup' ? 'Create Account' : 'Login';
-  }
-}
-
-async function validateStoredSession() {
-  const token = getStoredToken();
-  const user = getStoredUser();
-
-  if (!token || !user) {
-    return null;
-  }
-
-  try {
-    const data = await apiRequest('/api/me');
-    return { token, user: data.user || user };
-  } catch {
-    clearSession();
-    return null;
-  }
-}
-
-async function startChat(user, token) {
-  state.currentUser = user;
-  clearAuthError();
-  hideAuthModal();
-  updateNickUi();
-  updateRoomHeader();
-
-  state.messages = new Map();
-  state.unread = new Map();
-  state.typingUsers = new Map();
-  state.pendingRoomLoads = new Set();
-  state.subscriptions = new Set();
-  state.onlineUsers = [];
-
-  renderSidebar();
-  renderUsers();
-  renderTypingIndicator();
-
-  connectSocket(token);
-  syncSubscriptions();
-
-  await loadRoomHistory(state.currentRoom.type, state.currentRoom.id, true);
-}
-
-function disconnectSocket() {
-  if (!state.socket) {
-    return;
-  }
-
-  state.socket.off();
-  state.socket.disconnect();
-  state.socket = null;
-}
-
-function logout() {
-  if (state.typingTimeout) {
-    window.clearTimeout(state.typingTimeout);
-    state.typingTimeout = null;
-  }
-
-  disconnectSocket();
-  state.currentUser = null;
-  state.messages.clear();
-  state.unread.clear();
-  state.subscriptions.clear();
-  state.onlineUsers = [];
-  state.typingUsers.clear();
-  state.pendingRoomLoads.clear();
-  state.isTyping = false;
-  state.lastSendAt = 0;
-  clearSession();
-
-  resetNickUi();
-  updateRoomHeader();
-  renderMessages();
-  renderUsers();
-  renderSidebar();
-  renderTypingIndicator();
-  setAppConnected(false);
-  showAuthModal();
-}
-
-function sendMessage() {
-  if (!state.currentUser || !state.socket || !state.socket.connected) {
-    setConnectionStatus('Offline');
-    return;
-  }
-
-  const text = dom.messageInput ? dom.messageInput.value.trim() : '';
-  if (!text) {
-    return;
-  }
-
-  if (text.length > 500) {
-    showAuthError('Messages cannot exceed 500 characters.');
-    return;
-  }
-
-  const now = Date.now();
-  if (now - state.lastSendAt < 200) {
-    return;
-  }
-
-  state.lastSendAt = now;
-  clearAuthError();
-
-  const roomKey = getRoomKey(state.currentRoom.type, state.currentRoom.id);
-  if (!roomKey) {
-    return;
-  }
-
-  const localMessage = createLocalMessage(text);
-  appendMessage(roomKey, localMessage, { render: true });
-
-  dom.messageInput.value = '';
-  dom.messageInput.focus();
-
-  state.socket.emit('send_message', {
-    type: state.currentRoom.type,
-    id: state.currentRoom.id,
-    message: text
-  }, (response) => {
-    if (!response || !response.ok) {
-      removePendingMessage(roomKey, localMessage.clientId);
-      showAuthError(response && response.error ? response.error : 'Message failed to send.');
-      loadRoomHistory(state.currentRoom.type, state.currentRoom.id, true);
-      return;
+    // Also update the chat header if the updated user is the one we are chatting with
+    if (state.activeRoom && state.activeRoom.type === 'user' && state.activeRoom.id === updatedUser.id) {
+      dom.chatHeader.textContent = `Chat with ${updatedUser.username}`;
     }
+  });
 
-    markPendingDelivered(roomKey, localMessage.clientId);
+  state.socket.on('new_message', (message) => {
+    const roomKey = getRoomKey(message.room.type, message.room.id, state.currentUser.id);
+    if (state.activeRoom && getRoomKey(state.activeRoom.type, state.activeRoom.id, state.currentUser.id) === roomKey) {
+      renderMessage(message);
+    }
+    // Add notification logic here later
   });
 }
 
-function setupEventListeners() {
-  if (dom.toggleSidebarBtn) {
-    dom.toggleSidebarBtn.addEventListener('click', () => {
-      if (dom.app) {
-        dom.app.classList.toggle('sidebar-hidden');
-      }
-    });
+function getRoomKey(type, id, currentUserId) {
+  if (type === 'channel') {
+    return `channel:${id}`;
   }
 
-  if (dom.authForm) {
-    dom.authForm.addEventListener('submit', handleAuthSubmit);
+  if (!state.currentUser) {
+    return null;
   }
 
-  if (dom.authToggle) {
-    dom.authToggle.addEventListener('click', (event) => {
-      const toggleLink = event.target && event.target.closest ? event.target.closest('.toggle-link') : null;
-      if (toggleLink) {
-        setAuthMode(state.authMode === 'login' ? 'signup' : 'login');
-      }
-    });
-  }
-
-  if (dom.logoutBtn) {
-    dom.logoutBtn.addEventListener('click', logout);
-  }
-
-  if (dom.sendBtn) {
-    dom.sendBtn.addEventListener('click', sendMessage);
-  }
-
-  if (dom.messageInput) {
-    dom.messageInput.addEventListener('input', handleInputTyping);
-    dom.messageInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        sendMessage();
-      }
-    });
-  }
+  const ids = [String(state.currentUser.id), String(id)].sort();
+  return `dm:${ids[0]}:${ids[1]}`;
 }
 
 async function bootstrap() {

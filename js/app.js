@@ -1,9 +1,16 @@
-const API_BASE =
-  (typeof window.INDEX0_API_BASE === 'string' && window.INDEX0_API_BASE) ||
-  (typeof window.INDEX0_CONFIG?.backendUrl === 'string' && window.INDEX0_CONFIG.backendUrl.replace(/\/$/, '')) ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+const API_BASE = (() => {
+  if (typeof window.INDEX0_API_BASE === 'string') {
+    return window.INDEX0_API_BASE.trim().replace(/\/$/, '');
+  }
+
+  if (typeof window.INDEX0_CONFIG?.backendUrl === 'string') {
+    return window.INDEX0_CONFIG.backendUrl.replace(/\/$/, '');
+  }
+
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'
-    : 'https://index0-backend.onrender.com');
+    : 'https://index0-backend.onrender.com';
+})();
 
 // =============================================
 //          REMOTE LOGGING SETUP

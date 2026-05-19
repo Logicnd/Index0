@@ -1,6 +1,7 @@
 const API_BASE = (() => {
   if (typeof window.INDEX0_API_BASE === 'string') {
-    return window.INDEX0_API_BASE.trim().replace(/\/$/, '');
+    const configuredApiBase = window.INDEX0_API_BASE.trim();
+    return configuredApiBase === '' ? '' : configuredApiBase.replace(/\/$/, '');
   }
 
   if (typeof window.INDEX0_CONFIG?.backendUrl === 'string') {
